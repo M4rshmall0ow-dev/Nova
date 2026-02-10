@@ -15,11 +15,15 @@ Loader.Config = {
 Loader.Games = {
     [126509999114328] = {
         Name = "99 Nights in Forest",
-        Script = 'loadstring(game:HttpGet("loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/bcdc1084ce2b1e4df151d04c7257d10b.lua"))()"))()'
+        Url = "https://api.luarmor.net/files/v4/loaders/bcdc1084ce2b1e4df151d04c7257d10b.lua"
     },
     [131623223084840] = {
         Name = "Escape Tsunami For Brainrot!",
-        Script = 'loadstring(game:HttpGet("loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/9392c6336e05a60f4136ad06bfbd873a.lua"))()"))()'
+        Url = "https://api.luarmor.net/files/v4/loaders/9392c6336e05a60f4136ad06bfbd873a.lua"
+    },
+    [9363735110] = {
+        Name = "Custom Place",
+        Url = "" 
     }
 }
 
@@ -44,24 +48,30 @@ function Loader:Notify(title, text)
 end
 
 function Loader:ExecuteScript(gameData)
-    self:Log("Attempting to execute script for: " .. gameData.Name)
-    self:Notify("Script Loader", "Loading " .. gameData.Name .. "...")
+    if not gameData.Url or gameData.Url == "" then
+        self:Log("No URL provided for " .. gameData.Name, true)
+        return
+    end
 
-    local success, err = pcall(function()
-        local func = loadstring(gameData.Script)
-        if typeof(func) == "function" then
-            task.spawn(func)
-        else
-            error("Invalid loadstring response")
-        end
+    self:Log("Loading: " .. gameData.Name)
+    self:Notify("Script Loader", "Fetching " .. gameData.Name .. "...")
+
+    local success, scriptContent = pcall(function()
+        return game:HttpGet(gameData.Url)
     end)
 
     if success then
-        self:Log("Execution successful.")
-        self:Notify("Success", "Loaded " .. gameData.Name)
+        local func, err = loadstring(scriptContent)
+        if func then
+            task.spawn(func)
+            self:Log("Execution successful.")
+            self:Notify("Success", "Loaded " .. gameData.Name)
+        else
+            self:Log("Loadstring error: " .. tostring(err), true)
+        end
     else
-        self:Log("Execution failed: " .. tostring(err), true)
-        self:Notify("Error", "Failed to load script. Check console (F9).")
+        self:Log("Http error: " .. tostring(scriptContent), true)
+        self:Notify("Error", "Failed to fetch script.")
     end
 end
 
