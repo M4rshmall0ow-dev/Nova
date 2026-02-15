@@ -1,152 +1,305 @@
-local Loader = {}
-Loader.__index = Loader
+local NovaKeySystem = {}
 
-local Services = {
-    StarterGui = game:GetService("StarterGui"),
-    Players = game:GetService("Players"),
-    HttpService = game:GetService("HttpService"),
-    TweenService = game:GetService("TweenService"),
-    TextService = game:GetService("TextService")
-}
-
-Loader.Config = {
-    DebugMode = true,
-    NotificationDuration = 5,
-    DiscordLink = "http://discord.gg/hubnova"
-}
-
-Loader.Games = {
-    [126509999114328] = {
-        Name = "99 Nights in Forest",
-        Url = "https://api.luarmor.net/files/v4/loaders/bcdc1084ce2b1e4df151d04c7257d10b.lua",
-        IsUpdating = true 
+local Config = {
+    Title = "NOVA HUB",
+    Subtitle = "KEY SYSTEM",
+    Games = {
+        [126509999114328] = { 
+            Name = "99 Nights in Forest", 
+            ScriptID = "bcdc1084ce2b1e4df151d04c7257d10b"
+        },
+        [86362492050446] = {
+            Name = "Escape Tsunami For Brainrot!",
+            ScriptID = "9392c6336e05a60f4136ad06bfbd873a"
+        },
+        [131623223084840] = {
+            Name = "Escape Tsunami For Brainrot!",
+            ScriptID = "9392c6336e05a60f4136ad06bfbd873a"
+        },
     },
-    [131623223084840] = {
-        Name = "Escape Tsunami For Brainrot!",
-        Url = "https://api.luarmor.net/files/v4/loaders/9392c6336e05a60f4136ad06bfbd873a.lua"
+    DefaultScriptID = "bcdc1084ce2b1e4df151d04c7257d10b", 
+    
+    FileName = "NovaHubKey.txt", 
+    
+    GetKeyLink = "https://discord.gg/hubnova", 
+    DiscordLink = "https://discord.gg/hubnova",
+    
+    Checkpoints = {
+        {Name = "Checkpoint 1 (Work.ink)", Link = "https://work.ink/2gNw/luarmor-workin-key-system-nova-hub"},
+        {Name = "Checkpoint 2 (LinkVertise)", Link = "https://direct-link.net/3074186/P8b1bURDOqXE"}
     }
 }
 
-function Loader:Log(message, isError)
-    if not self.Config.DebugMode then return end
-    local prefix = isError and "[-] [ERROR]: " or "[+] [INFO]: "
-    if isError then warn(prefix .. message) else print(prefix .. message) end
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+
+local function getUIContainer()
+    local success, result = pcall(function() return game:GetService("CoreGui") end)
+    if success then return result end
+    return Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
-function Loader:ShowUpdateNotice()
-    local container = (type(gethui) == "function") and gethui() or game:GetService("CoreGui")
-    if container:FindFirstChild("AuroraUpdate") then container.AuroraUpdate:Destroy() end
+local function createTween(instance, properties, time, style, dir)
+    local info = TweenInfo.new(time or 0.5, style or Enum.EasingStyle.Quart, dir or Enum.EasingDirection.Out)
+    local tween = TweenService:Create(instance, info, properties)
+    tween:Play()
+    return tween
+end
 
-    local AuroraGui = Instance.new("ScreenGui")
-    AuroraGui.Name = "AuroraUpdate"
-    AuroraGui.Parent = container
+local function SaveKey(key)
+    if writefile then pcall(function() writefile(Config.FileName, key) end) end
+end
 
-    -- Main Frame
+local function LoadKey()
+    if isfile and isfile(Config.FileName) then
+        local s, r = pcall(function() return readfile(Config.FileName) end)
+        if s then return r end
+    end
+    return nil
+end
+
+local function MakeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then update(input) end
+    end)
+end
+
+local function ProcessKey(key, btn, MainFrame, Blur, ScreenGui)
+    local currentPlaceId = game.PlaceId
+    local currentGameId = game.GameId
+    
+    local GameData = Config.Games[currentPlaceId] or Config.Games[currentGameId] or 
+                     Config.Games[tostring(currentPlaceId)] or Config.Games[tostring(currentGameId)]
+    
+    if not GameData then
+        warn("!! NOVAHUB ERROR: GAME NOT RECOGNIZED !!")
+        warn("REAL PLACE ID: " .. tostring(currentPlaceId))
+        warn("REAL GAME ID (Universe): " .. tostring(currentGameId))
+        
+        btn.Text = "UNKNOWN GAME"
+        createTween(btn, {BackgroundColor3 = Color3.fromRGB(255, 50, 50)}, 0.3)
+        
+        local subtitle = MainFrame:FindFirstChild("Subtitle")
+        if subtitle then
+            local oldText = subtitle.Text
+            subtitle.Text = "ID ERROR: " .. tostring(currentPlaceId)
+            subtitle.TextColor3 = Color3.fromRGB(255, 100, 100)
+            task.delay(5, function()
+                subtitle.Text = oldText
+                subtitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+            end)
+        end
+        
+        task.wait(2)
+        btn.Text = "VERIFY KEY"
+        createTween(btn, {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}, 0.3)
+        return
+    end
+
+    print("NovaHub: Game Detected - " .. GameData.Name)
+    btn.Text = "CHECKING..."
+    createTween(btn, {BackgroundColor3 = Color3.fromRGB(255, 170, 0)}, 0.3)
+
+    local success, err = pcall(function()
+        local api = loadstring(game:HttpGet("https://sdkapi-public.luarmor.net/library.lua"))()
+        api.script_id = GameData.ScriptID
+        
+        local status = api.check_key(key)
+        
+        if status.code == "KEY_VALID" then
+            SaveKey(key)
+            btn.Text = "SUCCESS"
+            createTween(btn, {BackgroundColor3 = Color3.fromRGB(0, 255, 100)}, 0.3)
+            
+            createTween(MainFrame, {BackgroundTransparency = 1}, 0.5)
+            createTween(Blur, {Size = 0}, 0.5)
+
+            for _, desc in ipairs(MainFrame:GetDescendants()) do
+                if desc:IsA("GuiObject") then createTween(desc, {BackgroundTransparency = 1}, 0.5) end
+                if desc:IsA("TextLabel") or desc:IsA("TextButton") or desc:IsA("TextBox") then createTween(desc, {TextTransparency = 1}, 0.5) end
+                if desc:IsA("UIStroke") then createTween(desc, {Transparency = 1}, 0.5) end
+            end
+            
+            task.wait(0.6)
+            ScreenGui:Destroy()
+            Blur:Destroy()
+            
+            getgenv().script_key = key 
+            api.load_script()
+        else
+            warn("NovaHub: Validation failed. Response: " .. tostring(status.code))
+            btn.Text = "INVALID KEY"
+            createTween(btn, {BackgroundColor3 = Color3.fromRGB(255, 50, 50)}, 0.3)
+            task.wait(1.5)
+            btn.Text = "VERIFY KEY"
+            createTween(btn, {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}, 0.3)
+        end
+    end)
+
+    if not success then
+        warn("Key System API Error:", err)
+        btn.Text = "API ERROR"
+        createTween(btn, {BackgroundColor3 = Color3.fromRGB(255, 50, 50)}, 0.3)
+        task.wait(1.5)
+        btn.Text = "VERIFY KEY"
+        createTween(btn, {BackgroundColor3 = Color3.fromRGB(40, 40, 50)}, 0.3)
+    end
+end
+
+function NovaKeySystem.Run()
+    local existing = getUIContainer():FindFirstChild("NovaHubUI")
+    if existing then existing:Destroy() end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "NovaHubUI"
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = getUIContainer()
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local Blur = Instance.new("BlurEffect")
+    Blur.Size = 0
+    Blur.Parent = Lighting
+    createTween(Blur, {Size = 24}, 0.8)
+
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 380, 0, 180)
-    MainFrame.Position = UDim2.new(0.5, -190, 0.5, -90)
-    MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 500, 0, 320)
+    MainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
     MainFrame.BorderSizePixel = 0
-    MainFrame.Parent = AuroraGui
+    MainFrame.Parent = ScreenGui
+    MainFrame.BackgroundTransparency = 1
+    createTween(MainFrame, {BackgroundTransparency = 0.05}, 0.6)
 
-    local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 10)
-    UICorner.Parent = MainFrame
+    local MainCorner = Instance.new("UICorner", MainFrame)
+    MainCorner.CornerRadius = UDim.new(0, 16)
 
-    -- Aurora Gradient Glow (Stroke)
-    local UIStroke = Instance.new("UIStroke")
-    UIStroke.Color = Color3.fromRGB(0, 255, 255) -- Initial Cyan
-    UIStroke.Thickness = 2.5
-    UIStroke.Parent = MainFrame
-
-    -- Text: Status
-    local StatusText = Instance.new("TextLabel")
-    StatusText.Size = UDim2.new(1, 0, 0, 50)
-    StatusText.Position = UDim2.new(0, 0, 0, 20)
-    StatusText.BackgroundTransparency = 1
-    StatusText.Text = "Script is currently being updated!"
-    StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    StatusText.Font = Enum.Font.GothamBold
-    StatusText.TextSize = 18
-    StatusText.Parent = MainFrame
-
-    -- Text: Discord Invite
-    local DiscordText = Instance.new("TextLabel")
-    DiscordText.Size = UDim2.new(1, 0, 0, 30)
-    DiscordText.Position = UDim2.new(0, 0, 0, 70)
-    DiscordText.BackgroundTransparency = 1
-    DiscordText.Text = "Join our Discord for more updates!"
-    DiscordText.TextColor3 = Color3.fromRGB(200, 200, 200)
-    DiscordText.Font = Enum.Font.Gotham
-    DiscordText.TextSize = 14
-    DiscordText.Parent = MainFrame
-
-    -- Copy Button
-    local CopyBtn = Instance.new("TextButton")
-    CopyBtn.Size = UDim2.new(0, 200, 0, 40)
-    CopyBtn.Position = UDim2.new(0.5, -100, 0, 115)
-    CopyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    CopyBtn.Text = "Copy Discord Link"
-    CopyBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-    CopyBtn.Font = Enum.Font.GothamMedium
-    CopyBtn.TextSize = 14
-    CopyBtn.Parent = MainFrame
-
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 6)
-    BtnCorner.Parent = CopyBtn
-
-    local BtnStroke = Instance.new("UIStroke")
-    BtnStroke.Color = Color3.fromRGB(0, 255, 255)
-    BtnStroke.Transparency = 0.5
-    BtnStroke.Parent = CopyBtn
-
-    -- Aurora Animation (Color cycling)
+    local MainStroke = Instance.new("UIStroke", MainFrame)
+    MainStroke.Thickness = 2
+    local StrokeGradient = Instance.new("UIGradient", MainStroke)
+    StrokeGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 0, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 255, 255))
+    })
+    
     task.spawn(function()
-        while AuroraGui.Parent do
-            local tween = Services.TweenService:Create(UIStroke, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(170, 0, 255)})
-            tween:Play()
-            tween.Completed:Wait()
-            local tween2 = Services.TweenService:Create(UIStroke, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Color = Color3.fromRGB(0, 255, 255)})
-            tween2:Play()
-            tween2.Completed:Wait()
+        while MainFrame.Parent do
+            createTween(StrokeGradient, {Rotation = 360}, 4, Enum.EasingStyle.Linear)
+            task.wait(4)
+            StrokeGradient.Rotation = 0
         end
     end)
 
-    -- Copy Logic
-    CopyBtn.MouseButton1Click:Connect(function()
+    MakeDraggable(MainFrame, MainFrame)
+
+    local Title = Instance.new("TextLabel", MainFrame)
+    Title.Name = "Title"
+    Title.Text = Config.Title
+    Title.Font = Enum.Font.GothamBlack
+    Title.TextSize = 32
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.Size = UDim2.new(1, 0, 0, 35)
+    Title.Position = UDim2.new(0, 0, 0, 20)
+    Title.BackgroundTransparency = 1
+
+    local Subtitle = Instance.new("TextLabel", MainFrame)
+    Subtitle.Name = "Subtitle"
+    Subtitle.Text = Config.Subtitle
+    Subtitle.Font = Enum.Font.GothamBold
+    Subtitle.TextSize = 11
+    Subtitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+    Subtitle.Size = UDim2.new(1, 0, 0, 15)
+    Subtitle.Position = UDim2.new(0, 0, 0, 50)
+    Subtitle.BackgroundTransparency = 1
+    Subtitle.TextTransparency = 0.4
+
+    local InputContainer = Instance.new("Frame", MainFrame)
+    InputContainer.Size = UDim2.new(0.8, 0, 0, 45)
+    InputContainer.Position = UDim2.new(0.1, 0, 0, 95)
+    InputContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Instance.new("UICorner", InputContainer).CornerRadius = UDim.new(0, 10)
+
+    local KeyBox = Instance.new("TextBox", InputContainer)
+    KeyBox.Size = UDim2.new(1, -24, 1, 0)
+    KeyBox.Position = UDim2.new(0, 12, 0, 0)
+    KeyBox.BackgroundTransparency = 1
+    KeyBox.Text = LoadKey() or ""
+    KeyBox.PlaceholderText = "Paste your key here..."
+    KeyBox.TextColor3 = Color3.fromRGB(240, 240, 255)
+    KeyBox.Font = Enum.Font.GothamMedium
+    KeyBox.TextSize = 14
+    KeyBox.TextXAlignment = Enum.TextXAlignment.Center
+
+    local function CreateButton(text, baseColor, position, size, onClick)
+        local btn = Instance.new("TextButton", MainFrame)
+        btn.Text = text
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 13
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        btn.Size = size
+        btn.Position = position
+        btn.AutoButtonColor = false
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+        local stroke = Instance.new("UIStroke", btn)
+        stroke.Color = baseColor
+        stroke.Thickness = 1.5
+        stroke.Transparency = 0.5
+        btn.MouseButton1Click:Connect(function() onClick(btn) end)
+        return btn
+    end
+
+    CreateButton("GET KEY", Color3.fromRGB(0, 255, 255), UDim2.new(0.1, 0, 0, 160), UDim2.new(0.38, 0, 0, 45), function(btn)
         if setclipboard then
-            setclipboard(self.Config.DiscordLink)
-            CopyBtn.Text = "Copied!"
-            CopyBtn.TextColor3 = Color3.fromRGB(0, 255, 100)
-            task.wait(2)
-            CopyBtn.Text = "Copy Discord Link"
-            CopyBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-        else
-            CopyBtn.Text = "Executor Not Supported"
+            setclipboard(Config.GetKeyLink)
+            btn.Text = "COPIED!"
+            task.wait(1.5)
+            btn.Text = "GET KEY"
         end
+    end)
+
+    CreateButton("VERIFY KEY", Color3.fromRGB(160, 50, 255), UDim2.new(0.52, 0, 0, 160), UDim2.new(0.38, 0, 0, 45), function(btn)
+        if KeyBox.Text ~= "" then
+            ProcessKey(KeyBox.Text, btn, MainFrame, Blur, ScreenGui)
+        end
+    end)
+
+    local Premium = Instance.new("TextButton", MainFrame)
+    Premium.Size = UDim2.new(0.9, 0, 0, 45)
+    Premium.Position = UDim2.new(0.05, 0, 1, -60)
+    Premium.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    Premium.Text = "Tired of keys? Buy premium for $4 lifetime! Join Discord."
+    Premium.TextColor3 = Color3.fromRGB(255, 220, 100)
+    Premium.Font = Enum.Font.GothamMedium
+    Premium.TextSize = 12
+    Instance.new("UICorner", Premium).CornerRadius = UDim.new(0, 10)
+    Premium.MouseButton1Click:Connect(function()
+        if setclipboard then setclipboard(Config.DiscordLink) end
     end)
 end
 
-function Loader:ExecuteScript(gameData)
-    if not gameData.Url or gameData.Url == "" then return end
-    local success, content = pcall(function() return game:HttpGet(gameData.Url) end)
-    if success then
-        local func = loadstring(content)
-        if func then task.spawn(func) end
-    end
-end
-
-function Loader:Init()
-    if not game:IsLoaded() then game.Loaded:Wait() end
-    local detectedGame = self.Games[game.PlaceId]
-    if detectedGame then
-        if detectedGame.IsUpdating then
-            self:ShowUpdateNotice()
-        else
-            self:ExecuteScript(detectedGame)
-        end
-    end
-end
-
-return Loader:Init()
+return NovaKeySystem.Run()
