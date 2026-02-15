@@ -1,1 +1,96 @@
-loadstring(game:HttpGet("https://api.luarmor.net/files/v4/loaders/bcdc1084ce2b1e4df151d04c7257d10b.lua"))()
+
+local Loader = {}
+Loader.__index = Loader
+
+local Services = {
+    StarterGui = game:GetService("StarterGui"),
+    Players = game:GetService("Players"),
+    HttpService = game:GetService("HttpService")
+}
+
+Loader.Config = {
+    DebugMode = true,
+    NotificationDuration = 5
+}
+
+Loader.Games = {
+    [126509999114328] = {
+        Name = "99 Nights in Forest",
+        Url = "https://api.luarmor.net/files/v4/loaders/bcdc1084ce2b1e4df151d04c7257d10b.lua"
+    },
+    [131623223084840] = {
+        Name = "Escape Tsunami For Brainrot!",
+        Url = "https://api.luarmor.net/files/v4/loaders/9392c6336e05a60f4136ad06bfbd873a.lua"
+    },
+    [9363735110] = {
+        Name = "Custom Place",
+        Url = "" 
+    }
+}
+
+function Loader:Log(message, isError)
+    if not self.Config.DebugMode then return end
+    local prefix = isError and "[-] [ERROR]: " or "[+] [INFO]: "
+    if isError then
+        warn(prefix .. message)
+    else
+        print(prefix .. message)
+    end
+end
+
+function Loader:Notify(title, text)
+    pcall(function()
+        Services.StarterGui:SetCore("SendNotification", {
+            Title = title;
+            Text = text;
+            Duration = self.Config.NotificationDuration;
+        })
+    end)
+end
+
+function Loader:ExecuteScript(gameData)
+    if not gameData.Url or gameData.Url == "" then
+        self:Log("No URL provided for " .. gameData.Name, true)
+        return
+    end
+
+    self:Log("Loading: " .. gameData.Name)
+    self:Notify("Script Loader", "Fetching " .. gameData.Name .. "...")
+
+    local success, scriptContent = pcall(function()
+        return game:HttpGet(gameData.Url)
+    end)
+
+    if success then
+        local func, err = loadstring(scriptContent)
+        if func then
+            task.spawn(func)
+            self:Log("Execution successful.")
+            self:Notify("Success", "Loaded " .. gameData.Name)
+        else
+            self:Log("Loadstring error: " .. tostring(err), true)
+        end
+    else
+        self:Log("Http error: " .. tostring(scriptContent), true)
+        self:Notify("Error", "Failed to fetch script.")
+    end
+end
+
+function Loader:Init()
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
+
+    local currentPlaceId = game.PlaceId
+    local detectedGame = self.Games[currentPlaceId]
+
+    self:Log("Loader initialized. Current ID: " .. currentPlaceId)
+
+    if detectedGame then
+        self:ExecuteScript(detectedGame)
+    else
+        self:Log("No supported script found for this game.")
+    end
+end
+
+return Loader:Init()
