@@ -1,61 +1,179 @@
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
-local MaintenanceIDs = {
-    [126509999114328] = true,
-    [86362492050446] = true,
-    [131623223084840] = true,
-    [119987266683883] = true
+local Config = {
+    Title = "NOVA HUB",
+    Subtitle = "KEY SYSTEM",
+    Games = {
+        [126509999114328] = {
+            Name = "99 Nights in Forest",
+            ScriptID = "bcdc1084ce2b1e4df151d04c7257d10b"
+        },
+        [86362492050446] = {
+            Name = "Escape Tsunami For Brainrot!",
+            ScriptID = "9392c6336e05a60f4136ad06bfbd873a"
+        },
+        [131623223084840] = {
+            Name = "Escape Tsunami For Brainrot!",
+            ScriptID = "9392c6336e05a60f4136ad06bfbd873a"
+        },
+        [119987266683883] = {
+            Name = "Escape Lava for Brainrots",
+            ScriptID = "a423101eaff5bc0fd10d9c0b016fe64b"
+        },
+    }
 }
 
-local currentPlaceId = game.PlaceId
-local currentGameId = game.GameId
+local TARGET_KEY = "NovaKey123"
+local DISCORD_LINK = "https://discord.gg/hubnova"
 
-local function getSafeGuiParent()
-    if gethui then return gethui() end
-    local CoreGui = game:GetService("CoreGui")
-    local success = pcall(function() return CoreGui.Name end)
-    if success then return CoreGui end
-    return game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+local CoreGui = game:GetService("CoreGui")
+local parentUI = (CoreGui:FindFirstChild("RobloxGui") and CoreGui) or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+if parentUI:FindFirstChild("NovaHubKeySystem") then
+    parentUI.NovaHubKeySystem:Destroy()
 end
 
-local function showMaintenanceUI()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "MaintenanceGui"
-    screenGui.DisplayOrder = 9999
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = getSafeGuiParent()
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NovaHubKeySystem"
+ScreenGui.Parent = parentUI
 
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 350, 0, 100)
-    frame.Position = UDim2.new(0.5, -175, 0.5, -50)
-    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    frame.BorderSizePixel = 0
-    frame.Active = true
-    frame.Draggable = true
-    frame.Parent = screenGui
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = frame
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(255, 50, 50)
-    stroke.Thickness = 2
-    stroke.Parent = frame
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "Title"
+TitleLabel.Size = UDim2.new(1, 0, 0, 40)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = Config.Title .. " - " .. Config.Subtitle
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 20
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Parent = MainFrame
 
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.Text = "⚠️ Script is under maintenance!"
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextSize = 18
-    textLabel.Parent = frame
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Name = "Info"
+InfoLabel.Size = UDim2.new(1, -40, 0, 40)
+InfoLabel.Position = UDim2.new(0, 20, 0, 50)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Text = "You must join the Discord to get the key!"
+InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+InfoLabel.TextSize = 14
+InfoLabel.Font = Enum.Font.Gotham
+InfoLabel.TextWrapped = true
+InfoLabel.Parent = MainFrame
+
+local KeyInput = Instance.new("TextBox")
+KeyInput.Name = "KeyInput"
+KeyInput.Size = UDim2.new(1, -60, 0, 40)
+KeyInput.Position = UDim2.new(0, 30, 0, 100)
+KeyInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+KeyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeyInput.PlaceholderText = "Enter Key Here..."
+KeyInput.Text = ""
+KeyInput.TextSize = 14
+KeyInput.Font = Enum.Font.Gotham
+KeyInput.Parent = MainFrame
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 6)
+InputCorner.Parent = KeyInput
+
+local GetKeyBtn = Instance.new("TextButton")
+GetKeyBtn.Name = "GetKeyBtn"
+GetKeyBtn.Size = UDim2.new(0.5, -40, 0, 40)
+GetKeyBtn.Position = UDim2.new(0, 30, 0, 160)
+GetKeyBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+GetKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GetKeyBtn.Text = "Get Key"
+GetKeyBtn.TextSize = 14
+GetKeyBtn.Font = Enum.Font.GothamBold
+GetKeyBtn.Parent = MainFrame
+
+local GetKeyCorner = Instance.new("UICorner")
+GetKeyCorner.CornerRadius = UDim.new(0, 6)
+GetKeyCorner.Parent = GetKeyBtn
+
+local CheckBtn = Instance.new("TextButton")
+CheckBtn.Name = "CheckBtn"
+CheckBtn.Size = UDim2.new(0.5, -40, 0, 40)
+CheckBtn.Position = UDim2.new(0.5, 10, 0, 160)
+CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+CheckBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheckBtn.Text = "Submit Key"
+CheckBtn.TextSize = 14
+CheckBtn.Font = Enum.Font.GothamBold
+CheckBtn.Parent = MainFrame
+
+local CheckCorner = Instance.new("UICorner")
+CheckCorner.CornerRadius = UDim.new(0, 6)
+CheckCorner.Parent = CheckBtn
+
+GetKeyBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(DISCORD_LINK)
+        GetKeyBtn.Text = "Copied Link!"
+        task.wait(2)
+        GetKeyBtn.Text = "Get Key"
+    else
+        InfoLabel.Text = "Your executor does not support setclipboard. Link: " .. DISCORD_LINK
+    end
+end)
+
+local function ExecuteLuarmor(scriptId)
+    local success, err = pcall(function()
+        local url = "https://api.luarmor.net/files/v4/loaders/" .. scriptId .. ".lua"
+        local scriptContent = game:HttpGet(url)
+        
+        if type(loadstring) ~= "function" then
+            error("Your executor does not support 'loadstring'.")
+        end
+        
+        local loadedFunc, loadErr = loadstring(scriptContent)
+        
+        if type(loadedFunc) ~= "function" then
+            error("Failed to compile. Error: " .. tostring(loadErr) .. " | API Response: " .. tostring(scriptContent:sub(1, 150)))
+        end
+        
+        loadedFunc()
+    end)
+    
+    if not success then
+        warn("Nova Hub: Failed to execute script - " .. tostring(err))
+    end
 end
 
-if MaintenanceIDs[currentPlaceId] or MaintenanceIDs[currentGameId] then
-    showMaintenanceUI()
-    return
-end
+CheckBtn.MouseButton1Click:Connect(function()
+    local enteredKey = KeyInput.Text
+    
+    if enteredKey == TARGET_KEY then
+        CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        CheckBtn.Text = "Approved!"
+        task.wait(1)
+        
+        ScreenGui:Destroy()
+        
+        local placeId = game.PlaceId
+        local gameData = Config.Games[placeId]
+        
+        if gameData then
+            print("Nova Hub: Game Detected -> " .. gameData.Name)
+            print("Nova Hub: Executing Luarmor Script ID -> " .. gameData.ScriptID)
+            ExecuteLuarmor(gameData.ScriptID)
+        else
+            warn("Nova Hub: Current game (Place ID: " .. tostring(placeId) .. ") is not supported in the Config.")
+        end
+    else
+        CheckBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        CheckBtn.Text = "Invalid Key!"
+        task.wait(1.5)
+        CheckBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+        CheckBtn.Text = "Submit Key"
+    end
+end)
